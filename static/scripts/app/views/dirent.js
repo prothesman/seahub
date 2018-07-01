@@ -117,7 +117,7 @@ define([
             'click .open-via-client': 'open_via_client'
         },
 
-        getSmartLink:function (){
+        getSmartLink: function() {
             new DirentSmartLinkDialog({dir: this.dir, attributes: this.model.attributes});
             return false;
         },
