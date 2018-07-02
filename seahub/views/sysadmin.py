@@ -276,7 +276,7 @@ def sys_user_admin(request):
             profile = Profile.objects.get_profile_by_user(user.email)
             user.institution =  profile.institution if profile else ''
 
-    return render(request, 
+    return render(request,
         'sysadmin/sys_useradmin.html', {
             'users': users,
             'current_page': current_page,

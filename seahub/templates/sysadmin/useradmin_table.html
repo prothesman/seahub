@@ -3,7 +3,7 @@
     <tr>
         <th width="3%"><input type="checkbox" /></th>
         {% if is_pro %}
-        <th width="21%">ID / {% trans "Name" %} / {% trans "Contact Email" %}</th>
+        <th width="21%">{% trans "Name" %}</th>
         <th width="9%">{% trans "Status" %}</th>
         <th width="15%">{% trans "Role" %}</th>
         {% else %}
@@ -26,9 +26,10 @@
     <tr data-userid="{{user.email}}">
         <td><input type="checkbox" /></td>
         <td>
+            {% comment %}
+            TODO
+            {% endcomment %}
             <a href="{% url 'user_info' user.email %}">{{ user.email }}</a>
-            {% if user.name %}<br />{{ user.name }}{% endif %}
-            {% if user.contact_email %}<br />{{ user.contact_email }}{% endif %}
             {% if not is_admin_page %}
             {% if user.org %}
             <p style="font-size:11px;"><a href="{% url 'sys_org_info_user' user.org.org_id %}">({{user.org.org_name}})</a></p>
