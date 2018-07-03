@@ -48,7 +48,7 @@ define([
             $el.find('.copy-input').val($el.find('.smart-link-href').html()).select();
             document.execCommand('copy');
             Common.feedback(gettext("Copied succeeded"), 'success');
-            setTimeout($.modal.close, 200);
+            $.modal.close();
         },
 
         smartLinkClose: function () {
