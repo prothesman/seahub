@@ -20,6 +20,14 @@ class ProfileManager(models.Manager):
 
         return profile
 
+    def get_profile_by_work_no(self, work_no):
+        try:
+            profile = super(ProfileManager, self).get(work_no=work_no)
+        except Profile.DoesNotExist:
+            return None
+
+        return profile
+
 
 class Profile(models.Model):
     id = models.BigAutoField(primary_key=True)
