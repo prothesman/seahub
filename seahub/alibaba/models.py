@@ -10,26 +10,26 @@ from __future__ import unicode_literals
 from django.db import models
 
 
-class ProfileManager(models.Manager):
+class AlibabaProfileManager(models.Manager):
 
     def get_profile(self, email):
         try:
-            profile = super(ProfileManager, self).get(uid=email)
-        except Profile.DoesNotExist:
+            profile = super(AlibabaProfileManager, self).get(uid=email)
+        except AlibabaProfile.DoesNotExist:
             return None
 
         return profile
 
     def get_profile_by_work_no(self, work_no):
         try:
-            profile = super(ProfileManager, self).get(work_no=work_no)
-        except Profile.DoesNotExist:
+            profile = super(AlibabaProfileManager, self).get(work_no=work_no)
+        except AlibabaProfile.DoesNotExist:
             return None
 
         return profile
 
 
-class Profile(models.Model):
+class AlibabaProfile(models.Model):
     id = models.BigAutoField(primary_key=True)
     uid = models.CharField(max_length=64)
     personal_photo_url = models.CharField(max_length=225, blank=True, null=True)
@@ -46,21 +46,32 @@ class Profile(models.Model):
     work_status = models.CharField(max_length=4)
     gmt_leave = models.DateTimeField(blank=True, null=True)
 
-    objects = ProfileManager()
+    objects = AlibabaProfileManager()
 
     class Meta:
         managed = False
         db_table = 'alibaba_profile'
 
+class AlibabaMessageQueueManager(models.Manager):
 
-class MessageQueue(models.Model):
+    def add_message(self, topic, message_body):
+
+        message = self.model(topic=topic, message_body=message_body, lock_version=0)
+        message.save(using=self._db)
+        return message
+
+
+class AlibabaMessageQueue(models.Model):
     id = models.BigAutoField(primary_key=True)
     topic = models.CharField(max_length=64)
     gmt_create = models.DateTimeField()
     gmt_modified = models.DateTimeField()
     message_body = models.TextField()
-    is_consumed = models.IntegerField()
-    lock_version = models.CharField(max_length=191, blank=True, null=True)
+    is_consumed = models.IntegerField(blank=True, null=True)
+    lock_version = models.IntegerField()
+    message_key = models.CharField(max_length=128, blank=True, null=True)
+
+    objects = AlibabaMessageQueueManager()
 
     class Meta:
         managed = False

@@ -763,6 +763,8 @@ from seahub.group.signals import grpmsg_added, group_join_request, add_user_to_g
 from seahub.share.signals import share_repo_to_user_successful, \
     share_repo_to_group_successful
 from seahub.invitations.signals import accept_guest_invitation_successful
+from seahub.alibaba.models import AlibabaMessageQueue, AlibabaProfile
+
 
 @receiver(upload_file_successful)
 def add_upload_file_msg_cb(sender, **kwargs):
@@ -780,6 +782,30 @@ def add_upload_file_msg_cb(sender, **kwargs):
     detail = file_uploaded_msg_to_json(filename, repo_id, folder_path)
     UserNotification.objects.add_file_uploaded_msg(owner, detail)
 
+    # for alibaba
+    repo = seafile_api.get_repo(repo_id)
+    dingding_msg_markdown_text = 'A file named %s is uploaded to %s' % \
+            (filename, repo.name)
+
+    dingding_msg = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": MSG_TYPE_FILE_UPLOADED,
+            "text": dingding_msg_markdown_text
+        }
+    }
+
+    to_profile = AlibabaProfile.objects.get_profile(owner)
+    to_work_no = to_profile.work_no
+    alibaba_message_body = {
+        "pushType": "dingding",
+        "content": dingding_msg,
+        "pushWorkNos": [to_work_no]
+    }
+
+    AlibabaMessageQueue.objects.add_message('01-push_message',
+            json.dumps(alibaba_message_body))
+
 @receiver(share_repo_to_user_successful)
 def add_share_repo_msg_cb(sender, **kwargs):
     """Notify user when others share repos to him/her.
@@ -794,6 +820,31 @@ def add_share_repo_msg_cb(sender, **kwargs):
 
     detail = repo_share_msg_to_json(from_user, repo.id, path, org_id)
     UserNotification.objects.add_repo_share_msg(to_user, detail)
+
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(from_user)
+    from_emp_name = from_profile.emp_name
+    dingding_msg_markdown_text = '%s has shared a library named %s to you.' % \
+            (from_emp_name, repo.name)
+
+    dingding_msg = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": MSG_TYPE_REPO_SHARE,
+            "text": dingding_msg_markdown_text
+        }
+    }
+
+    to_profile = AlibabaProfile.objects.get_profile(to_user)
+    to_work_no = to_profile.work_no
+    alibaba_message_body = {
+        "pushType": "dingding",
+        "content": dingding_msg,
+        "pushWorkNos": [to_work_no]
+    }
+
+    AlibabaMessageQueue.objects.add_message('01-push_message',
+            json.dumps(alibaba_message_body))
 
 @receiver(share_repo_to_group_successful)
 def add_share_repo_to_group_msg_cb(sender, **kwargs):
@@ -815,6 +866,39 @@ def add_share_repo_to_group_msg_cb(sender, **kwargs):
         detail = repo_share_to_group_msg_to_json(from_user, repo.id, group_id, path, org_id)
         UserNotification.objects.add_repo_share_to_group_msg(to_user, detail)
 
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(from_user)
+    from_emp_name = from_profile.emp_name
+    group = ccnet_api.get_group(group_id)
+    dingding_msg_markdown_text = '%s has shared a library named %s to group %s.' % \
+            (from_emp_name, repo.name, group.group_name)
+
+    dingding_msg = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": MSG_TYPE_REPO_SHARE_TO_GROUP,
+            "text": dingding_msg_markdown_text
+        }
+    }
+
+    for member in members:
+
+        to_user = member.user_name
+        if to_user == from_user:
+            continue
+
+        to_profile = AlibabaProfile.objects.get_profile(to_user)
+        to_work_no = to_profile.work_no
+
+        alibaba_message_body = {
+            "pushType": "dingding",
+            "content": dingding_msg,
+            "pushWorkNos": [to_work_no]
+        }
+
+        AlibabaMessageQueue.objects.add_message('01-push_message',
+                json.dumps(alibaba_message_body))
+
 @receiver(grpmsg_added)
 def grpmsg_added_cb(sender, **kwargs):
     group_id = kwargs['group_id']
@@ -826,6 +910,38 @@ def grpmsg_added_cb(sender, **kwargs):
 
     detail = group_msg_to_json(group_id, from_email, message)
     UserNotification.objects.bulk_add_group_msg_notices(notify_members, detail)
+
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(from_email)
+    from_emp_name = from_profile.emp_name
+    group = ccnet_api.get_group(group_id)
+    dingding_msg_markdown_text = "%s posted a new discussion in %s." % \
+            (from_emp_name, group.group_name)
+
+    dingding_msg = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": MSG_TYPE_ADD_USER_TO_GROUP,
+            "text": dingding_msg_markdown_text
+        }
+    }
+
+    for to_user in notify_members:
+
+        if to_user == from_email:
+            continue
+
+        to_profile = AlibabaProfile.objects.get_profile(to_user)
+        to_work_no = to_profile.work_no
+
+        alibaba_message_body = {
+            "pushType": "dingding",
+            "content": dingding_msg,
+            "pushWorkNos": [to_work_no]
+        }
+
+        AlibabaMessageQueue.objects.add_message('01-push_message',
+                json.dumps(alibaba_message_body))
 
 @receiver(group_join_request)
 def group_join_request_cb(sender, **kwargs):
@@ -852,6 +968,33 @@ def add_user_to_group_cb(sender, **kwargs):
     UserNotification.objects.set_add_user_to_group_notice(to_user=added_user,
                                                           detail=detail)
 
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(group_staff)
+    from_emp_name = from_profile.emp_name
+    group = ccnet_api.get_group(group_id)
+    dingding_msg_markdown_text = "User %s has added you to group %s." % \
+            (from_emp_name, group.group_name)
+
+    dingding_msg = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": MSG_TYPE_ADD_USER_TO_GROUP,
+            "text": dingding_msg_markdown_text
+        }
+    }
+
+    to_profile = AlibabaProfile.objects.get_profile(added_user)
+    to_work_no = to_profile.work_no
+
+    alibaba_message_body = {
+        "pushType": "dingding",
+        "content": dingding_msg,
+        "pushWorkNos": [to_work_no]
+    }
+
+    AlibabaMessageQueue.objects.add_message('01-push_message',
+            json.dumps(alibaba_message_body))
+
 @receiver(comment_file_successful)
 def comment_file_successful_cb(sender, **kwargs):
     repo = kwargs['repo']
@@ -866,6 +1009,38 @@ def comment_file_successful_cb(sender, **kwargs):
     for u in notify_users:
         detail = file_comment_msg_to_json(repo.id, file_path, author, comment)
         UserNotification.objects.add_file_comment_msg(u, detail)
+
+    # for alibaba
+    from_profile = AlibabaProfile.objects.get_profile(author)
+    from_emp_name = from_profile.emp_name
+    file_name = os.path.basename(file_path)
+    dingding_msg_markdown_text = "File %s has a new comment from user %s." % \
+            (file_name, from_emp_name)
+
+    dingding_msg = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": MSG_TYPE_FILE_COMMENT,
+            "text": dingding_msg_markdown_text
+        }
+    }
+
+    for to_user in notify_users:
+
+        if to_user == author:
+            continue
+
+        to_profile = AlibabaProfile.objects.get_profile(to_user)
+        to_work_no = to_profile.work_no
+
+        alibaba_message_body = {
+            "pushType": "dingding",
+            "content": dingding_msg,
+            "pushWorkNos": [to_work_no]
+        }
+
+        AlibabaMessageQueue.objects.add_message('01-push_message',
+                json.dumps(alibaba_message_body))
 
 @receiver(accept_guest_invitation_successful)
 def accept_guest_invitation_successful_cb(sender, **kwargs):
