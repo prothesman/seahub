@@ -492,6 +492,9 @@ LOGO_HEIGHT = 32
 CUSTOM_LOGO_PATH = 'custom/mylogo.png'
 CUSTOM_FAVICON_PATH = 'custom/favicon.ico'
 
+# css to modify the seafile css (e.g. css/my_site.css)
+BRANDING_CSS = ''
+
 # Enable custom css to modify the seafile css
 ENABLE_BRANDING_CSS = False
 
